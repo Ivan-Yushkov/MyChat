@@ -19,5 +19,14 @@ struct MUser: Hashable, Decodable {
     static func == (lhs: MUser, rhs: MUser) -> Bool {
         return lhs.id == rhs.id
     }
+    
+    func isContains(text: String?) -> Bool {
+        guard let text = text else { return true }
+        if text.isEmpty {
+            return true
+        }
+        let lowercasedText = text.lowercased()
+        return username.lowercased().contains(lowercasedText)
+    }
 }
 

@@ -7,10 +7,7 @@
 
 import UIKit
 
-protocol SelfConfiguringCell {
-    static var reuseID: String { get }
-    func configure(value: MChact)
-}
+
 
 
 class ActiveClassCell: UICollectionViewCell, SelfConfiguringCell {
@@ -29,8 +26,9 @@ class ActiveClassCell: UICollectionViewCell, SelfConfiguringCell {
         setupConstraints()
     }
     
-    func configure(value: MChact) {
-        guard let image = UIImage(named: value.userImageString) else { return }
+    func configure<U>(value: U) {
+        guard let value = value as? MChact,
+        let image = UIImage(named: value.userImageString) else { return }
         friendImageView.image = image
         friendNameLabel.text = value.username
         lastMessageLabel.text = value.lastMessage

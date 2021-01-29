@@ -33,7 +33,7 @@ class PeopleViewController: UIViewController {
         setupSearchBar()
         setupCollectionView()
         createDataSourse()
-        reloadData()
+        reloadData(searchText: nil)
     }
     
     private func setupCollectionView() {
@@ -43,7 +43,7 @@ class PeopleViewController: UIViewController {
         view.addSubview(collectionView)
         
         collectionView.register(SectionHeader.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: SectionHeader.reuseId)
-        collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "cellId")
+        collectionView.register(UserCell.self, forCellWithReuseIdentifier: UserCell.reuseID)
     }
     
     private func setupSearchBar() {
@@ -78,7 +78,7 @@ extension PeopleViewController {
     private func createUsers() -> NSCollectionLayoutSection {
         let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1))
         let item = NSCollectionLayoutItem(layoutSize: itemSize)
-        let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalWidth(0.5))
+        let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalWidth(0.6))
         let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitem: item, count: 2)
         group.interItemSpacing = .fixed(15)
         let section = NSCollectionLayoutSection(group: group)
@@ -99,8 +99,7 @@ extension PeopleViewController {
 //MARK: - methods for differable data source
 extension PeopleViewController {
     private func configure(value: MUser, indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cellId", for: indexPath) as? UICollectionViewCell else { fatalError("cannot create cell") }
-        cell.backgroundColor = .systemBlue
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: UserCell.reuseID, for: indexPath) as? UserCell else { fatalError("cannot create cell") }
         return cell
     }
     
@@ -109,7 +108,7 @@ extension PeopleViewController {
             guard let section = Section(rawValue: indexPath.section) else { fatalError("problems with section") }
             switch section {
             case .users:
-                return self.configure(value: user, indexPath: indexPath)
+                return self.configure(collectionView: collectionView, cellType: UserCell.self, value: user, for: indexPath)
             }
         })
         
@@ -128,10 +127,14 @@ extension PeopleViewController {
         }
     }
     
-    private func reloadData() {
+    private func reloadData(searchText: String?) {
+        let filteredUsers = users.filter { (user) -> Bool in
+            user.isContains(text: searchText)
+        }
+        
         var snapshot = NSDiffableDataSourceSnapshot<Section, MUser>()
         snapshot.appendSections([.users])
-        snapshot.appendItems(users, toSection: .users)
+        snapshot.appendItems(filteredUsers, toSection: .users)
         dataSource?.apply(snapshot, animatingDifferences: true)
     }
 }
@@ -139,6 +142,7 @@ extension PeopleViewController {
 //MARK: - Search bar delegate
 extension PeopleViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        reloadData(searchText: searchText)
         print(searchText)
     }
 }

@@ -39,7 +39,7 @@ class ListViewController: UIViewController {
         setupCollectionView()
         setupSearchBar()
         createDataSource()
-        reloadData()
+        reloadData(searchText: nil)
     }
     
     //MARK: - method for setup collection view
@@ -119,11 +119,7 @@ class ListViewController: UIViewController {
     
     //MARK: - DiffableDataSource methods
     
-    private func configure<T: SelfConfiguringCell>(cellType: T.Type, value: MChact, for indexPath: IndexPath) -> T {
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellType.reuseID, for: indexPath) as? T else { fatalError("Unable to dequeue cell type") }
-        cell.configure(value: value)
-        return cell
-    }
+    
     
     private func createDataSource( ){
         dataSource = UICollectionViewDiffableDataSource<Section, MChact>(collectionView: collectionView, cellProvider: { (collectionView, indexPath, chat) -> UICollectionViewCell? in
@@ -131,9 +127,9 @@ class ListViewController: UIViewController {
             
             switch section {
             case .activeChats:
-                return self.configure(cellType: ActiveClassCell.self, value: chat, for: indexPath)
+                return self.configure(collectionView: collectionView, cellType: ActiveClassCell.self, value: chat, for: indexPath)
             case .waitingChats:
-                return self.configure(cellType: WaitingChatCell.self, value: chat, for: indexPath)
+                return self.configure(collectionView: collectionView, cellType: WaitingChatCell.self, value: chat, for: indexPath)
             }
         })
         
@@ -146,7 +142,8 @@ class ListViewController: UIViewController {
         }
     }
     
-    private func reloadData() {
+    private func reloadData(searchText: String?) {
+        
         var snapshot = NSDiffableDataSourceSnapshot<Section, MChact>()
         snapshot.appendSections([.waitingChats, .activeChats])
         snapshot.appendItems(waitingChats, toSection: .waitingChats)
@@ -166,7 +163,7 @@ class ListViewController: UIViewController {
 //MARK: - Search bar delegate
 extension ListViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        print(searchText)
+        reloadData(searchText: searchText)
     }
 }
 
