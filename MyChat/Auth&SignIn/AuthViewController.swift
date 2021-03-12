@@ -6,6 +6,8 @@
 //
 
 import UIKit
+import GoogleSignIn
+
 
 class AuthViewController: UIViewController {
 
@@ -14,6 +16,9 @@ class AuthViewController: UIViewController {
     let googleLabel = UILabel(text: "Get started with")
     let emailLabel = UILabel(text: "Or sign up with")
     let alreadyOnBoardLabel = UILabel(text: "Already onboard?")
+    
+    let loginVC = LoginViewController()
+    let signUpVC = SignUpViewController()
     
     let emailButton = UIButton(title: "Email", titleColor: .white, backgroundColor: .blackForButton)
     let loginButton = UIButton(title: "Login", titleColor: .redForButton, backgroundColor: .white, isShadow: true)
@@ -24,10 +29,31 @@ class AuthViewController: UIViewController {
         view.backgroundColor = .white
         googleButton.customizedGoogleButton()
         setupConstraints()
+        emailButton.addTarget(self, action: #selector(emailButtonTapped), for: .touchUpInside)
+        loginButton.addTarget(self , action: #selector(loginButtonTapped), for: .touchUpInside)
+        googleButton.addTarget(self, action: #selector(googleLoginButtonTapped), for: .touchUpInside )
+        
+        loginVC.delegate = self
+        signUpVC.delegate = self
+        GIDSignIn.sharedInstance()?.delegate = self
     }
     
-
-
+    //MARK: - Selector's methods
+    @objc private func emailButtonTapped() {
+        print(#function)
+        present(SignUpViewController(), animated: true, completion: nil)
+    }
+    
+    @objc private func loginButtonTapped() {
+        print(#function)
+        present(LoginViewController(), animated: true, completion: nil)
+    }
+    
+    @objc private func googleLoginButtonTapped() {
+        print(#function)
+        GIDSignIn.sharedInstance()?.presentingViewController = self
+        GIDSignIn.sharedInstance()?.signIn()
+    }
 }
 
 //MARK: - Setup constraints
@@ -58,6 +84,46 @@ extension AuthViewController {
     
 }
 
+extension AuthViewController: AuthNavigationDelegate {
+    func toLoginVC() {
+        present(loginVC, animated: true)
+    }
+    
+    func toSignUpVC() {
+        present(signUpVC, animated: true)
+    }
+    
+    
+}
+
+//MARK: GID sign in delegate
+extension AuthViewController: GIDSignInDelegate {
+    func sign(_ signIn: GIDSignIn!, didSignInFor user: GIDGoogleUser!, withError error: Error!) {
+        AuthService.shared.googleLogin(user: user, error: error) { (result) in
+            switch result {
+            
+            case .success(let user):
+                FirestoreService.shared.getUserData(user: user) { (result) in
+                    switch result {
+                     
+                    case .success(let muser):
+                        let mainTBVC = MainTabBarController(currentUser: muser)
+                        mainTBVC.modalPresentationStyle = .fullScreen
+                        UIApplication.getTopViewController()?.present(mainTBVC, animated: true)
+                    case .failure(_):
+                        UIApplication.getTopViewController()?.presentAlert(title: "Success", message: "You registered") {
+                            self.present(SetupProfileViewController(currentUser: user), animated: true, completion: nil)
+                        }
+                    }
+                }
+            case .failure(let error):
+                UIApplication.getTopViewController()? .presentAlert(title: "Erorr!", message: error.localizedDescription)
+            }
+        }
+    }
+    
+    
+}
 
 //MARK: - SwiftUI
 import SwiftUI

@@ -27,11 +27,11 @@ class ActiveClassCell: UICollectionViewCell, SelfConfiguringCell {
     }
     
     func configure<U>(value: U) {
-        guard let value = value as? MChact,
-        let image = UIImage(named: value.userImageString) else { return }
+        guard let value = value as? MChat,
+              let image = UIImage(named: value.friendImageUrlString) else { return }
         friendImageView.image = image
-        friendNameLabel.text = value.username
-        lastMessageLabel.text = value.lastMessage
+        friendNameLabel.text = value.friendUsername
+        lastMessageLabel.text = value.lastMessageContent
     }
     
     

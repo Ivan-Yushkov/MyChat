@@ -6,14 +6,30 @@
 //
 
 import UIKit
+import SDWebImage
 
 class ProfileViewController: UIViewController {
 
     let containerView = UIView()
-    let imageView = UIImageView(image: #imageLiteral(resourceName: "human9"), contentMode: .scaleAspectFill)
+    let imageView = UIImageView(image: nil, contentMode: .scaleAspectFill)
     let nameLabel = UILabel(text: "Ivan", font: .systemFont(ofSize: 20, weight: .light))
     let descriptionLabel = UILabel(text: "Hello, please talk to me, my friend. I will be your best friend in the world", font: .systemFont(ofSize: 16, weight: .light))
     let myTextField = InsertableTextField()
+    private let user: MUser
+    
+    init(user: MUser = MUser(username: "", email: "", description: "", sex: "", avatarStringURL: "", id: "")) {
+        self.user = user
+        nameLabel.text = user.username
+        descriptionLabel.text = user.description
+        if let avatarStringURL = user.avatarStringURL, let url = URL(string: avatarStringURL) {
+            imageView.sd_setImage(with: url, completed: nil)
+        }
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -40,7 +56,17 @@ class ProfileViewController: UIViewController {
     }
     
     @objc func sendMessage() {
-        print("Send")
+        guard let message = myTextField.text else { return }
+        dismiss(animated: true) {
+            FirestoreService.shared.createWaitigChat(message: message, reciever: self.user) { (result) in
+                switch result {
+                case .success():
+                    UIApplication.getTopViewController()?.presentAlert(title: "Success!", message: "Your message to \(self.user.username) has been sent.")
+                case .failure(let error):
+                    UIApplication.getTopViewController()?.presentAlert(title: "Error!", message: error.localizedDescription)
+                }
+            }
+        }
     }
     
     private func setupConstraits() {

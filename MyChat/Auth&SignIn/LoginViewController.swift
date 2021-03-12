@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import GoogleSignIn
 
 class LoginViewController: UIViewController {
 
@@ -16,6 +17,8 @@ class LoginViewController: UIViewController {
     let emailLabel = UILabel(text: "Email")
     let passwordLabel = UILabel(text: "Password")
     let needAnAccountLabel = UILabel(text: "Need an account?")
+    
+    var delegate: AuthNavigationDelegate?
     
     let googleButton = UIButton(title: "Google", titleColor: .black, backgroundColor: .white, isShadow: true)
     let emailTextField = OneLineTextField(font: .avenir20())
@@ -35,10 +38,50 @@ class LoginViewController: UIViewController {
         view.backgroundColor = .white
         googleButton.customizedGoogleButton()
         setupConstraints()
+        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
+        signUpButton.addTarget(self, action: #selector(signUpButtonTapped), for: .touchUpInside)
+        googleButton.addTarget(self, action: #selector(googleLoginButtonTapped), for: .touchUpInside)
     }
     
-
-
+    @objc private func loginButtonTapped() {
+        AuthService.shared.login(email: emailTextField.text, password: passwordTextField.text) { (result) in
+            switch result {
+            
+            case .success(let user):
+                self.presentAlert(title: "Success", message: "You logined") {
+                    FirestoreService.shared.getUserData(user: user) { (result) in
+                        switch result {
+                        
+                        case .success(let muser):
+                            let mainTBVC = MainTabBarController(currentUser: muser)
+                            mainTBVC.modalPresentationStyle = .fullScreen
+                            self.present(mainTBVC, animated: true)
+                        case .failure(let error):
+                            self.present(SetupProfileViewController(currentUser: user), animated: true)
+                        }
+                    }
+                }
+            case .failure(let error):
+                self.presentAlert(title: "Error", message: error.localizedDescription)
+            }
+            
+        }
+    }
+    
+    @objc func signUpButtonTapped() {
+        dismiss(animated: true) {
+            self.delegate?.toSignUpVC()
+            print("hello")
+        }
+        
+    }
+    
+    @objc private func googleLoginButtonTapped() {
+        print(#function)
+        GIDSignIn.sharedInstance()?.presentingViewController = self
+        GIDSignIn.sharedInstance()?.signIn()
+    }
+    
 }
 //MARK: - setup constraints
 extension LoginViewController {

@@ -6,12 +6,15 @@
 //
 
 import UIKit
+import Firebase
+import FirebaseFirestore
 
 
 
 class PeopleViewController: UIViewController {
 
-    let users = Bundle.main.decode([MUser].self, from: "users.json")
+    var users = [MUser]()
+    var userListener: ListenerRegistration?
     
     enum Section: Int, CaseIterable {
         case users
@@ -24,6 +27,22 @@ class PeopleViewController: UIViewController {
         }
     }
     
+    private let currentUser: MUser
+    
+    init(currentUser: MUser) {
+        self.currentUser = currentUser
+        super.init(nibName: nil, bundle: nil)
+        title = currentUser.username
+    }
+    
+    deinit {
+        userListener?.remove()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     var collectionView: UICollectionView!
     var dataSource: UICollectionViewDiffableDataSource<Section, MUser>?
     
@@ -33,7 +52,35 @@ class PeopleViewController: UIViewController {
         setupSearchBar()
         setupCollectionView()
         createDataSourse()
-        reloadData(searchText: nil)
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Log Out", style: .plain, target: self, action: #selector(signOut))
+        
+        userListener = ListenerService.shared.userObserve(users: users, completion: { (result) in
+            switch result {
+            
+            case .success(let users):
+                self.users = users
+                self.reloadData(searchText: nil)
+            case .failure(let error):
+                self.presentAlert(title: "Error", message: error.localizedDescription)
+            }
+        })
+    }
+    
+    @objc private func signOut() {
+        let ac = UIAlertController(title: nil, message: "Are you sure you want to sign out", preferredStyle: .alert)
+        let action = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+        let signOutAction = UIAlertAction(title: "Sign Out", style: .destructive) { (_) in
+            do {
+                try Auth.auth().signOut()
+                UIApplication.shared.keyWindow?.rootViewController = AuthViewController()
+            } catch {
+                print(error.localizedDescription)
+            }
+        }
+        ac.addAction(action)
+        ac.addAction(signOutAction)
+        present(ac, animated: true)
     }
     
     private func setupCollectionView() {
@@ -41,7 +88,7 @@ class PeopleViewController: UIViewController {
         collectionView.autoresizingMask = [.flexibleHeight, .flexibleWidth]
         collectionView.backgroundColor = .mainWhite
         view.addSubview(collectionView)
-        
+        collectionView.delegate = self
         collectionView.register(SectionHeader.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: SectionHeader.reuseId)
         collectionView.register(UserCell.self, forCellWithReuseIdentifier: UserCell.reuseID)
     }
@@ -144,6 +191,15 @@ extension PeopleViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         reloadData(searchText: searchText)
         print(searchText)
+    }
+}
+
+extension PeopleViewController: UICollectionViewDelegate {
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let user = self.dataSource?.itemIdentifier(for: indexPath) else { return }
+        let profileVC = ProfileViewController(user: user)
+        present(profileVC, animated: true, completion: nil)
     }
 }
 

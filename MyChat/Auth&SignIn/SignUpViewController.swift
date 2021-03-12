@@ -20,6 +20,8 @@ class SignUpViewController: UIViewController {
     let passwordTextField = OneLineTextField(font: .avenir20())
     let confirmPasswordTextField = OneLineTextField(font: .avenir20())
     
+    var delegate: AuthNavigationDelegate?
+    
     let signUpButton = UIButton(title: "Sign Up", titleColor: .white, backgroundColor: .blackForButton)
     let loginButton: UIButton = {
         let button = UIButton()
@@ -33,10 +35,34 @@ class SignUpViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .white
         setupConstraints()
+        signUpButton.addTarget(self, action: #selector(signUpButtonTapped), for: .touchUpInside)
+        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
     }
     
 
-
+    @objc private func signUpButtonTapped() {
+        AuthService.shared.register(email: emailTextField.text,
+                                    password: passwordTextField.text,
+                                    confirmPassword: confirmPasswordTextField.text) { [weak self] (result) in
+            switch result {
+            
+            case .success(let user):
+                self?.presentAlert(title: "Success", message: "You registred") { [weak self] in
+                    self?.present(SetupProfileViewController(currentUser: user), animated: true, completion: nil)
+                }
+                print(user.email)
+            case .failure(let error):
+                self?.presentAlert(title: "Error", message: error.localizedDescription)
+            }
+            
+        }
+    }
+    
+    @objc func loginButtonTapped() {
+        dismiss(animated: true) {
+            self.delegate?.toLoginVC()
+        }
+    }
 }
 
 //MARK: - setup constraints

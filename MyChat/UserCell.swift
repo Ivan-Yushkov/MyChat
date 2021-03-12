@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SDWebImage
 
 class UserCell: UICollectionViewCell, SelfConfiguringCell {
     
@@ -38,11 +39,17 @@ class UserCell: UICollectionViewCell, SelfConfiguringCell {
         contentView.clipsToBounds = true
     }
     
+    override func prepareForReuse() {
+        userImageView.image = nil
+    }
+    
     func configure<U>(value: U) {
         guard let user = value as? MUser
               else { fatalError() }
         userNameLabel.text = user.username
-        userImageView.image = UIImage(named: user.avatarStringURL)
+        guard let avatarStringUrl = user.avatarStringURL,
+              let url = URL(string: avatarStringUrl) else { return }
+        userImageView.sd_setImage(with: url, completed: nil)
 
     }
     

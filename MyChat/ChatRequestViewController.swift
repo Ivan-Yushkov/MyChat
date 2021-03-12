@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SDWebImage
 
 class ChatRequestViewController: UIViewController {
     
@@ -16,6 +17,20 @@ class ChatRequestViewController: UIViewController {
     let acceptButton = UIButton(title: "ACCEPT", titleColor: .white, font: .laoSangamMN20(), backgroundColor: .black, isShadow: false, cornerRadius: 10)
     let denytButton = UIButton(title: "Deny", titleColor: #colorLiteral(red: 0.8365439773, green: 0.19984743, blue: 0.1978578269, alpha: 1), font: .laoSangamMN20(), backgroundColor: .mainWhite, isShadow: false, cornerRadius: 10)
     
+    weak var delegate: WaitingChatsNavigation?
+    
+    private var chat: MChat
+    
+    init(chat: MChat) {
+        self.chat = chat
+        nameLabel.text = chat.friendUsername
+        imageView.sd_setImage(with: URL(string: chat.friendImageUrlString), completed: nil)
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,6 +41,20 @@ class ChatRequestViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         acceptButton.applyGradients(cornerRadius: 10)
+        denytButton.addTarget(self, action: #selector(denyDidTaped), for: .touchUpInside)
+        acceptButton.addTarget(self, action: #selector(acceptDidTaped), for: .touchUpInside)
+    }
+    
+    @objc private func denyDidTaped() {
+        dismiss(animated: true) {
+            self.delegate?.removeWaitingChat(chat: self.chat)
+        }
+    }
+    
+    @objc private func acceptDidTaped() {
+        dismiss(animated: true) {
+            self.delegate?.changeToActive(chat: self.chat)
+        }
     }
     
     private func customizeViews() {
@@ -93,23 +122,23 @@ extension ChatRequestViewController {
 }
 
 //MARK: - SwiftUI
-import SwiftUI
-
-struct ChatRequestVCProvider: PreviewProvider {
-    static var previews: some View {
-        ConteinerView().edgesIgnoringSafeArea(.all)
-    }
-    
-    struct ConteinerView: UIViewControllerRepresentable {
-        
-        let viewController = ChatRequestViewController()
-        
-        func makeUIViewController(context: Context) -> some UIViewController {
-            return viewController
-        }
-        
-        func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {
-            
-        }
-    }
-}
+//import SwiftUI
+//
+//struct ChatRequestVCProvider: PreviewProvider {
+//    static var previews: some View {
+//        ConteinerView().edgesIgnoringSafeArea(.all)
+//    }
+//
+//    struct ConteinerView: UIViewControllerRepresentable {
+//
+//        let viewController = ChatRequestViewController()
+//
+//        func makeUIViewController(context: Context) -> some UIViewController {
+//            return viewController
+//        }
+//
+//        func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {
+//
+//        }
+//    }
+//}
